@@ -3,6 +3,8 @@ package com.example.LibraryManagementSystem.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "patron")
@@ -21,5 +23,8 @@ public class Patron {
 
     @Column(name = "phone_number")
     private String phoneNumber;
+
+    @OneToMany(mappedBy = "patron",  cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BorrowingRecord> borrowingRecords;
 
 }

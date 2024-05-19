@@ -3,6 +3,8 @@ package com.example.LibraryManagementSystem.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 
 @Data
 @Entity
@@ -30,9 +32,14 @@ public class Book {
     private String description;
 
     @Column(name="price")
-    private int price;
+    private double price;
 
     @Column(name="availability")
     private boolean availability;
+
+//    cascade = CascadeType.ALL, orphanRemoval = true
+    @OneToMany(mappedBy = "book",  cascade = CascadeType.ALL)
+    private List<BorrowingRecord> borrowingRecords;
+
 
 }

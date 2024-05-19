@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -16,9 +17,17 @@ public class BorrowingRecord {
     private Long id;
 
     @Column(name = "borrow_date")
-    private LocalDate borrowDate;
+    private LocalDateTime borrowDate;
 
     @Column(name = "return_date")
-    private LocalDate returnDate;
+    private LocalDateTime returnDate;
+
+    @ManyToOne
+    @JoinColumn(name = "book_id")
+    private Book book;
+
+    @ManyToOne
+    @JoinColumn(name = "patron_id")
+    private Patron patron;
 
 }
