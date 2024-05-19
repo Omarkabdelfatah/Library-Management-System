@@ -7,6 +7,7 @@ import com.example.LibraryManagementSystem.entity.BorrowingRecord;
 import com.example.LibraryManagementSystem.entity.Patron;
 import com.example.LibraryManagementSystem.repository.PatronRepository;
 import com.example.LibraryManagementSystem.service.PatronService;
+import com.example.LibraryManagementSystem.utils.CustomBeanUtils;
 import com.example.LibraryManagementSystem.utils.Result;
 import com.example.LibraryManagementSystem.utils.ResultStatus;
 import org.modelmapper.ModelMapper;
@@ -91,16 +92,7 @@ public class PatronServiceImpl implements PatronService {
             Patron patronToUpdate= patronRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Patron with ID:"+ id +" Not Found! "));
             Patron updatedPatron = convertToEntity(patronDTO);
-//            patronToUpdate = updatedPatron;
-            if(updatedPatron.getName()!=null){
-                patronToUpdate.setName(updatedPatron.getName());
-            }
-            if(updatedPatron.getEmail()!=null){
-                patronToUpdate.setEmail(updatedPatron.getEmail());
-            }
-            if(updatedPatron.getPhoneNumber()!=null){
-                patronToUpdate.setPhoneNumber(updatedPatron.getPhoneNumber());
-            }
+            CustomBeanUtils.copyNonNullProperties(updatedPatron, patronToUpdate);
             try {
                 Patron savedPatron = patronRepository.saveAndFlush(patronToUpdate);
                 return new Result<PatronDTO>(convertToDto(savedPatron),
