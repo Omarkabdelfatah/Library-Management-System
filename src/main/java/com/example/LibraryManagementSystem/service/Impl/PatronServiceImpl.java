@@ -1,9 +1,6 @@
 package com.example.LibraryManagementSystem.service.Impl;
 
-import com.example.LibraryManagementSystem.dto.BorrowingRecordDTO;
 import com.example.LibraryManagementSystem.dto.PatronDTO;
-import com.example.LibraryManagementSystem.entity.Book;
-import com.example.LibraryManagementSystem.entity.BorrowingRecord;
 import com.example.LibraryManagementSystem.entity.Patron;
 import com.example.LibraryManagementSystem.repository.PatronRepository;
 import com.example.LibraryManagementSystem.service.PatronService;
@@ -12,6 +9,7 @@ import com.example.LibraryManagementSystem.utils.Result;
 import com.example.LibraryManagementSystem.utils.ResultStatus;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +28,7 @@ public class PatronServiceImpl implements PatronService {
     }
 
     @Override
+    @Transactional
     public Result<PatronDTO> addPatron(PatronDTO patronDTO) {
         try {
             Patron savedPatron = patronRepository.save(convertToEntity(patronDTO));
@@ -73,6 +72,7 @@ public class PatronServiceImpl implements PatronService {
     }
 
     @Override
+    @Transactional
     public Result<Void> deletePatron(Long id) {
         if (patronRepository.existsById(id)) {
             patronRepository.deleteById(id);
@@ -87,6 +87,7 @@ public class PatronServiceImpl implements PatronService {
     }
 
     @Override
+    @Transactional
     public Result<PatronDTO> updatePatron(Long id, PatronDTO patronDTO) {
         if (patronRepository.existsById(id)) {
             Patron patronToUpdate= patronRepository.findById(id)

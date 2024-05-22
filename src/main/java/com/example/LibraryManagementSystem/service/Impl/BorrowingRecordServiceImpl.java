@@ -2,19 +2,20 @@ package com.example.LibraryManagementSystem.service.Impl;
 
 import com.example.LibraryManagementSystem.dto.BookDTO;
 import com.example.LibraryManagementSystem.dto.BorrowingRecordDTO;
-import com.example.LibraryManagementSystem.entity.Book;
+import com.example.LibraryManagementSystem.dto.PatronDTO;
 import com.example.LibraryManagementSystem.entity.BorrowingRecord;
-import com.example.LibraryManagementSystem.entity.Patron;
 import com.example.LibraryManagementSystem.repository.BorrowingRecordRepository;
-import com.example.LibraryManagementSystem.repository.PatronRepository;
+import com.example.LibraryManagementSystem.service.BookService;
 import com.example.LibraryManagementSystem.service.BorrowingRecordService;
 import com.example.LibraryManagementSystem.service.PatronService;
 import com.example.LibraryManagementSystem.utils.Result;
 import com.example.LibraryManagementSystem.utils.ResultStatus;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,16 +24,106 @@ import java.util.stream.Collectors;
 public class BorrowingRecordServiceImpl implements BorrowingRecordService {
 
     private final BorrowingRecordRepository borrowingRecordRepository;
+    private final BookService bookService;
+
+    private final PatronService patronService;
 
     private final ModelMapper modelMapper;
 
-    public BorrowingRecordServiceImpl (BorrowingRecordRepository borrowingRecordRepository ,ModelMapper modelMapper){
+    public BorrowingRecordServiceImpl (BorrowingRecordRepository borrowingRecordRepository , BookService bookService, PatronService patronService, ModelMapper modelMapper){
         this.borrowingRecordRepository =borrowingRecordRepository;
+        this.bookService = bookService;
+        this.patronService = patronService;
         this.modelMapper = modelMapper;
     }
 
 
     @Override
+    @Transactional
+    public Result borrowBook(Long bookId, Long patronId) {
+
+        Result<BorrowingRecordDTO> checkBorrowingRecord = new Result<BorrowingRecordDTO>();
+        BorrowingRecordDTO newBorrowingRecord = new BorrowingRecordDTO();
+
+        // check if the book exists
+        Result<BookDTO> borrowedBook = bookService.getBookById(bookId);
+        // check if the patron exists
+        Result<PatronDTO> patron = patronService.getPatronById(patronId);
+
+        if(borrowedBook.getStatus() == ResultStatus.SUCCESS && patron.getStatus() == ResultStatus.SUCCESS){
+
+            // check if there's borrow record with this patron and book id
+            checkBorrowingRecord = getBorrowingRecordByBookIdAndPatronId(bookId,patronId);
+
+
+            if(checkBorrowingRecord.getStatus()==ResultStatus.SUCCESS && checkBorrowingRecord.getObject().getReturnDate()==null) {
+                return new Result<BorrowingRecordDTO>(checkBorrowingRecord.getObject(),
+                        ResultStatus.ERROR,
+                        "Patron with id: " + patronId + " is borrowing book with id: "
+                        + bookId + " Now!");
+            }
+            // new borrow record for this patron with this book
+            else {
+                newBorrowingRecord.setBook(borrowedBook.getObject());
+                newBorrowingRecord.setPatron(patron.getObject());
+                newBorrowingRecord.setBorrowDate(LocalDateTime.now());
+                newBorrowingRecord.setReturnDate(null);
+            }
+        }
+        else if(borrowedBook.getStatus()== ResultStatus.NOT_FOUND){
+            return new Result(bookId,
+                    ResultStatus.NOT_FOUND,
+                    "Book with id: "+bookId+" Not Found."
+                    );
+
+        }
+
+        else if(patron.getStatus()== ResultStatus.NOT_FOUND){
+            return new Result(patronId,
+                    ResultStatus.NOT_FOUND,
+                    "Patron with id: "+patronId+" Not Found."
+                    );
+
+        }
+
+        Result<BorrowingRecordDTO> resultOfAdding = addBorrowingRecord(newBorrowingRecord);
+
+        if (resultOfAdding.getStatus()== ResultStatus.ERROR) {
+            return new Result(null,
+                    ResultStatus.ERROR,
+                    resultOfAdding.getErrorMessage()
+            );
+
+        }
+
+        return new Result<BorrowingRecordDTO>(resultOfAdding.getObject(),
+                ResultStatus.SUCCESS,
+                resultOfAdding.getErrorMessage()
+        );
+
+    }
+
+    @Override
+    @Transactional
+    public Result returnBook(Long bookId, Long patronId) {
+
+        Result<BorrowingRecordDTO> borrowingRecord = getBorrowingRecordByBookIdAndPatronIdAndReturnDate(bookId,patronId,null);
+        if(borrowingRecord.getStatus()==ResultStatus.NOT_FOUND){
+            return new Result(borrowingRecord.getObject(),
+                    ResultStatus.NOT_FOUND,
+                    borrowingRecord.getErrorMessage() );
+        }
+
+        borrowingRecord.getObject().setReturnDate(LocalDateTime.now());
+        borrowingRecord=updateBorrowingRecord(borrowingRecord.getObject().getId(), borrowingRecord.getObject());
+        return new Result(borrowingRecord.getObject(),
+                ResultStatus.SUCCESS,
+                borrowingRecord.getErrorMessage() );
+
+    }
+
+    @Override
+    @Transactional
     public Result<BorrowingRecordDTO> addBorrowingRecord(BorrowingRecordDTO borrowingRecordDTO) {
         try {
             BorrowingRecord savedBorrowingRecord = borrowingRecordRepository.save(convertToEntity(borrowingRecordDTO));
@@ -117,6 +208,7 @@ public class BorrowingRecordServiceImpl implements BorrowingRecordService {
     }
 
     @Override
+    @Transactional
     public Result<BorrowingRecordDTO> updateBorrowingRecord(Long id, BorrowingRecordDTO borrowingRecordDTO) {
 
         if (borrowingRecordRepository.existsById(id)) {

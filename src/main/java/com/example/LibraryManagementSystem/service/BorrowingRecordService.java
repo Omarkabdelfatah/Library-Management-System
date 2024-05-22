@@ -7,6 +7,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface BorrowingRecordService {
+
+    Result borrowBook(Long bookId,Long patronId);
+    Result returnBook(Long bookId,Long patronId);
     Result<BorrowingRecordDTO> addBorrowingRecord(BorrowingRecordDTO borrowingRecordDTO);
     Result<BorrowingRecordDTO> getBorrowingRecordById(Long id);
     Result<BorrowingRecordDTO> getBorrowingRecordByBookIdAndPatronId(Long bookId, Long patronId);

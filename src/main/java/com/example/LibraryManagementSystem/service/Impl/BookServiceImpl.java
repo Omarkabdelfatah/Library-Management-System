@@ -10,6 +10,7 @@ import com.example.LibraryManagementSystem.utils.Result;
 import com.example.LibraryManagementSystem.utils.ResultStatus;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class BookServiceImpl implements BookService {
 
 
     @Override
+    @Transactional
     public Result<BookDTO> addBook(BookDTO bookDTO) {
         try {
             Book savedBook = bookRepository.save(convertToEntity(bookDTO));
@@ -42,6 +44,7 @@ public class BookServiceImpl implements BookService {
         }
     }
 
+    @Override
     public Result<BookDTO> getBookById(Long id) {
         Optional<Book> book = bookRepository.findById(id);
         if (book.isPresent()) {
@@ -55,6 +58,7 @@ public class BookServiceImpl implements BookService {
         }
     }
 
+    @Override
     public Result<List<BookDTO>> getAllBooks() {
         try {
             List<Book> books = bookRepository.findAll();
@@ -68,6 +72,8 @@ public class BookServiceImpl implements BookService {
         }
     }
 
+    @Override
+    @Transactional
     public Result deleteBook(Long id) {
         if (bookRepository.existsById(id)) {
             bookRepository.deleteById(id);
@@ -82,6 +88,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional
     public Result<BookDTO> updateBook(Long id, BookDTO bookDTO) {
 
         if (bookRepository.existsById(id)) {
