@@ -9,6 +9,8 @@ import com.example.LibraryManagementSystem.utils.CustomBeanUtils;
 import com.example.LibraryManagementSystem.utils.Result;
 import com.example.LibraryManagementSystem.utils.ResultStatus;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +25,7 @@ public class BookServiceImpl implements BookService {
 
     private final ModelMapper modelMapper;
 
-    public BookServiceImpl (BookRepository bookRepository,ModelMapper modelMapper){
+    public BookServiceImpl(BookRepository bookRepository, ModelMapper modelMapper) {
         this.bookRepository = bookRepository;
         this.modelMapper = modelMapper;
     }
@@ -34,17 +36,18 @@ public class BookServiceImpl implements BookService {
     public Result<BookDTO> addBook(BookDTO bookDTO) {
         try {
             Book savedBook = bookRepository.save(convertToEntity(bookDTO));
-            return  new Result<BookDTO>(convertToDto(savedBook),
+            return new Result<BookDTO>(convertToDto(savedBook),
                     ResultStatus.SUCCESS,
                     "Book Added Successfully");
         } catch (Exception e) {
-            return new Result(null ,
+            return new Result(null,
                     ResultStatus.ERROR,
                     e.getMessage());
         }
     }
 
     @Override
+    @Cacheable(value = "bookCache", key = "#id")
     public Result<BookDTO> getBookById(Long id) {
         Optional<Book> book = bookRepository.findById(id);
         if (book.isPresent()) {
@@ -59,6 +62,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Cacheable(value = "bookCache")
     public Result<List<BookDTO>> getAllBooks() {
         try {
             List<Book> books = bookRepository.findAll();
@@ -66,7 +70,7 @@ public class BookServiceImpl implements BookService {
                     ResultStatus.SUCCESS,
                     "Books Found Successfully");
         } catch (Exception e) {
-            return new Result( null,
+            return new Result(null,
                     ResultStatus.ERROR,
                     e.getMessage());
         }
@@ -74,39 +78,41 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "bookCache", key = "#id")
     public Result deleteBook(Long id) {
         if (bookRepository.existsById(id)) {
             bookRepository.deleteById(id);
             return new Result(null,
-                            ResultStatus.SUCCESS,
-                            "Book with Id: "+id+"Deleted Successfully");
+                    ResultStatus.SUCCESS,
+                    "Book with Id: " + id + "Deleted Successfully");
         } else {
             return new Result(null,
-                                ResultStatus.NOT_FOUND,
-                                "Book with id:"+id+" not found");
+                    ResultStatus.NOT_FOUND,
+                    "Book with id:" + id + " not found");
         }
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "bookCache", key = "#id")
     public Result<BookDTO> updateBook(Long id, BookDTO bookDTO) {
 
         if (bookRepository.existsById(id)) {
-            Book bookToUpdate= bookRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Book with ID:"+ id +" Not Found! "));
+            Book bookToUpdate = bookRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Book with ID:" + id + " Not Found! "));
 
             Book updatedBook = convertToEntity(bookDTO);
             CustomBeanUtils.copyNonNullProperties(updatedBook, bookToUpdate);
             try {
                 Book savedBook = bookRepository.save(bookToUpdate);
                 return new Result<BookDTO>(convertToDto(savedBook),
-                                    ResultStatus.SUCCESS,
-                                    "Book With id: "+id+" Updated Successfully");
+                        ResultStatus.SUCCESS,
+                        "Book With id: " + id + " Updated Successfully");
             } catch (Exception e) {
-                return new Result( updatedBook,ResultStatus.ERROR,"Error Updating Book: "+e.getMessage());
+                return new Result(updatedBook, ResultStatus.ERROR, "Error Updating Book: " + e.getMessage());
             }
         } else {
-            return new Result(null,ResultStatus.NOT_FOUND,"Book with id: "+id +" Not Found");
+            return new Result(null, ResultStatus.NOT_FOUND, "Book with id: " + id + " Not Found");
         }
 
     }
@@ -115,8 +121,8 @@ public class BookServiceImpl implements BookService {
         return modelMapper.map(entity, BookDTO.class);
     }
 
-    public List<BookDTO> convertToDTOList(List<Book> entities){
-        return  entities.stream()
+    public List<BookDTO> convertToDTOList(List<Book> entities) {
+        return entities.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
