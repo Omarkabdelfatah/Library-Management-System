@@ -25,7 +25,7 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
-    @PostMapping("/addUser")
+    @PostMapping("/register")
     public String addUser(@RequestBody User user) {
         return userService.addUser(user);
     }
